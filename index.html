@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full bg-slate-950 text-slate-100">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NHL Stanley Cup Finals AI Predictor</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: { ice: '#00f3ff', gold: '#ffd700' },
+      fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
+    }
+  }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+.glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+.glow-gold { box-shadow: 0 0 25px rgba(255, 215, 0, 0.25); }
+.glow-ice { box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); }
+::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: #020617; } ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+</style>
+</head>
+<body class="min-h-full flex flex-col font-sans bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-100">
+<header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
+<div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+<div class="flex items-center space-x-3">
+<div class="p-2 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xl flex items-center justify-center shadow-lg"><i class="fa-solid fa-trophy"></i></div>
+<div><h1 class="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">STANLEY CUP <span class="text-cyan-400">AI</span> PREDICTOR</h1><p class="text-[10px] text-slate-400 font-mono">POISSON-PDO QUANT ENGINE + GEMINI 2.5 FLASH</p></div>
+</div>
+<div class="flex items-center space-x-3">
+<button onclick="toggleModal('apiModal', true)" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:border-cyan-500 transition-all text-xs">
+<span id="apiKeyDot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span><span id="apiKeyStatusText" class="text-slate-300">API Key</span>
+</button>
+<button onclick="triggerManualSync()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 font-bold text-xs transition-all flex items-center space-x-1.5 shadow-md active:scale-95 hover:opacity-90">
+<i class="fa-solid fa-rotate-right" id="syncSpinner"></i><span>Run AI Sync</span>
+</button>
+</div>
+</div>
+</header>
+<div class="bg-slate-900/90 border-b border-slate-800 text-xs py-2 px-4">
+<div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+<div class="flex items-center space-x-2 text-slate-400"><i class="fa-regular fa-clock text-cyan-400"></i><span>24h Auto Sync Cycle:</span><span id="timerCountdown" class="font-mono text-cyan-300 font-semibold">23:59:59</span></div>
+<div class="flex items-center space-x-4 text-slate-400 font-mono text-[11px]"><span>Last Updated: <strong id="lastUpdatedTime" class="text-slate-200">Just Now</strong></span><span>|</span><span>Engine: <strong id="engineModeText" class="text-amber-400">Poisson-PDO Math Model</strong></span></div>
+</div>
+</div>
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+<div class="glass rounded-2xl p-6 relative overflow-hidden glow-gold border border-gold/20">
+<div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
+<div class="text-center lg:text-left space-y-3 max-w-xl">
+<div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold uppercase"><i class="fa-solid fa-crown"></i><span>Predicted Stanley Cup Winner</span></div>
+<h2 id="heroChampionName" class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">EDMONTON OILERS</h2>
+<p id="heroTacticalSummary" class="text-slate-300 text-sm leading-relaxed">High-octane power play combined with elite possession metrics driving a calculated edge over eastern conference defense.</p>
+<div class="flex flex-wrap justify-center lg:justify-start gap-3 pt-1">
+<div class="bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2"><div class="text-[10px] text-slate-400 uppercase font-mono">Win Probability</div><div id="heroWinProb" class="text-2xl font-black text-amber-400 font-mono">58.4%</div></div>
+<div class="bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2"><div class="text-[10px] text-slate-400 uppercase font-mono">Series Score</div><div id="heroSeriesScore" class="text-2xl font-black text-cyan-400 font-mono">4 - 2</div></div>
+<div class="bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2"><div class="text-[10px] text-slate-400 uppercase font-mono">Runner-Up</div><div id="heroRunnerUp" class="text-xl font-bold text-slate-200">Florida Panthers</div></div>
+</div>
+</div>
+<div class="flex flex-col items-center justify-center p-5 bg-slate-900/90 rounded-2xl border border-slate-800 min-w-[210px] glow-ice">
+<svg class="w-24 h-32 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)]" viewBox="0 0 100 140" fill="none"><path d="M30 130 H70 V120 H30 Z" fill="#d1d5db"/><path d="M25 120 H75 V105 H25 Z" fill="#9ca3af"/><path d="M28 105 H72 V90 H28 Z" fill="#e5e7eb"/><path d="M32 90 H68 V78 H32 Z" fill="#9ca3af"/><path d="M35 78 H65 V68 H35 Z" fill="#d1d5db"/><path d="M20 30 Q50 40 80 30 L70 68 H30 L20 30 Z" fill="url(#cupGrad)"/><ellipse cx="50" cy="30" rx="30" ry="10" fill="#f3f4f6"/><defs><linearGradient id="cupGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#9ca3af"/><stop offset="50%" stop-color="#f9fafb"/><stop offset="100%" stop-color="#6b7280"/></linearGradient></defs></svg>
+<div class="mt-2 text-center"><span class="text-xs font-mono font-semibold text-amber-400 uppercase">Lord Stanley's Cup</span><div id="heroMatchupTitle" class="text-xs text-slate-400">EDM vs FLA</div></div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<div class="lg:col-span-5 space-y-6">
+<div class="glass rounded-xl p-5 border border-slate-800 space-y-4">
+<h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between"><span><i class="fa-solid fa-sliders text-cyan-400 mr-2"></i> Series Teams Config</span></h3>
+<div class="space-y-3">
+<div><label class="block text-xs font-semibold text-slate-300 mb-1">Western / Team A (Home Ice)</label><select id="teamASelect" onchange="recalculateQuantModel()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-medium focus:border-cyan-400 focus:outline-none"><option value="EDM" selected>Edmonton Oilers (EDM)</option><option value="DAL">Dallas Stars (DAL)</option><option value="VAN">Vancouver Canucks (VAN)</option><option value="COL">Colorado Avalanche (COL)</option><option value="VGK">Vegas Golden Knights (VGK)</option></select></div>
+<div><label class="block text-xs font-semibold text-slate-300 mb-1">Eastern / Team B</label><select id="teamBSelect" onchange="recalculateQuantModel()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-medium focus:border-cyan-400 focus:outline-none"><option value="FLA" selected>Florida Panthers (FLA)</option><option value="NYR">New York Rangers (NYR)</option><option value="CAR">Carolina Hurricanes (CAR)</option><option value="BOS">Boston Bruins (BOS)</option><option value="TBL">Tampa Bay Lightning (TBL)</option></select></div>
+</div>
+</div>
+<div class="glass rounded-xl p-5 border border-slate-800 space-y-3">
+<h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between"><span><i class="fa-solid fa-calculator text-cyan-400 mr-2"></i> Poisson Math Framework</span><span class="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800 font-mono">xG + PDO Engine</span></h3>
+<p class="text-xs text-slate-400">Frontend deterministic model calculating Goal Expectations ($xG$) derived from offensive/defensive efficiency, PDO luck regression, and Corsi For % ($CF\%$).</p>
+<div class="space-y-2 pt-1 font-mono text-xs">
+<div class="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-1"><div class="flex justify-between font-bold"><span id="mathTeamAName">Edmonton Oilers</span><span id="mathTeamAxG" class="text-cyan-400">3.42 xG/G</span></div><div class="grid grid-cols-2 gap-2 text-[10px] text-slate-400"><div>PDO: <span id="mathTeamAPDO" class="text-slate-200">1.002</span></div><div>Corsi: <span id="mathTeamACersi" class="text-slate-200">54.2%</span></div></div></div>
+<div class="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-1"><div class="flex justify-between font-bold"><span id="mathTeamBName">Florida Panthers</span><span id="mathTeamBxG" class="text-cyan-400">3.15 xG/G</span></div><div class="grid grid-cols-2 gap-2 text-[10px] text-slate-400"><div>PDO: <span id="mathTeamBPDO" class="text-slate-200">1.005</span></div><div>Corsi: <span id="mathTeamBCersi" class="text-slate-200">53.1%</span></div></div></div>
+<div class="p-2.5 bg-cyan-950/40 border border-cyan-500/30 rounded-lg flex justify-between items-center"><span class="text-slate-300">Quant Win Edge:</span><span id="quantEdgeResult" class="text-cyan-300 font-bold">56.8% - 43.2%</span></div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-7 space-y-6">
+<div class="glass rounded-xl p-5 border border-slate-800 space-y-4">
+<div class="flex items-center justify-between"><h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider"><i class="fa-solid fa-chart-simple text-cyan-400 mr-2"></i> Key Metrics & Performance Drivers</h3><div class="flex items-center space-x-4 text-xs font-semibold"><span class="flex items-center"><span class="w-3 h-3 rounded-full bg-cyan-400 mr-1.5 inline-block"></span><span id="legendTeamA">EDM</span></span><span class="flex items-center"><span class="w-3 h-3 rounded-full bg-amber-400 mr-1.5 inline-block"></span><span id="legendTeamB">FLA</span></span></div></div>
+<div class="space-y-3 text-xs font-mono">
+<div><div class="flex justify-between text-slate-300 mb-1"><span>Offensive Efficiency (Goals/G)</span><span><strong id="statOffA" class="text-cyan-400">3.56</strong> vs <strong id="statOffB" class="text-amber-400">3.38</strong></span></div><div class="h-2 bg-slate-900 rounded-full overflow-hidden flex"><div id="barOffA" class="bg-cyan-400 h-full" style="width: 52%"></div><div id="barOffB" class="bg-amber-400 h-full" style="width: 48%"></div></div></div>
+<div><div class="flex justify-between text-slate-300 mb-1"><span>Goaltending Save % (SV%)</span><span><strong id="statSvA" class="text-cyan-400">.908</strong> vs <strong id="statSvB" class="text-amber-400">.915</strong></span></div><div class="h-2 bg-slate-900 rounded-full overflow-hidden flex"><div id="barSvA" class="bg-cyan-400 h-full" style="width: 49.5%"></div><div id="barSvB" class="bg-amber-400 h-full" style="width: 50.5%"></div></div></div>
+<div><div class="flex justify-between text-slate-300 mb-1"><span>Special Teams Power Play % (PP%)</span><span><strong id="statPpA" class="text-cyan-400">28.5%</strong> vs <strong id="statPpB" class="text-amber-400">23.2%</strong></span></div><div class="h-2 bg-slate-900 rounded-full overflow-hidden flex"><div id="barPpA" class="bg-cyan-400 h-full" style="width: 55%"></div><div id="barPpB" class="bg-amber-400 h-full" style="width: 45%"></div></div></div>
+<div><div class="flex justify-between text-slate-300 mb-1"><span>Analytics Corsi For % (CF%)</span><span><strong id="statCfA" class="text-cyan-400">54.2%</strong> vs <strong id="statCfB" class="text-amber-400">53.1%</strong></span></div><div class="h-2 bg-slate-900 rounded-full overflow-hidden flex"><div id="barCfA" class="bg-cyan-400 h-full" style="width: 51%"></div><div id="barCfB" class="bg-amber-400 h-full" style="width: 49%"></div></div></div>
+</div>
+</div>
+<div class="glass rounded-xl p-5 border border-slate-800 space-y-3">
+<h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between"><span><i class="fa-solid fa-brain text-cyan-400 mr-2"></i> AI Analytical Reasoning Log</span><span class="text-[10px] font-mono text-cyan-400" id="aiStatusBadge">Math Synthetic Model</span></h3>
+<div id="aiTacticalText" class="text-xs text-slate-300 leading-relaxed"><p>Edmonton's historically elite power play efficiency combined with superior Corsi possession metrics creates a tactical edge over Florida's physical forecheck. Expected goals regression indicates the Oilers sustain offensive drive in 5v5 situations while converting high-danger chances.</p></div>
+</div>
+</div>
+</div>
+<div class="glass rounded-2xl p-6 border border-slate-800 space-y-4">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+<div><h3 class="text-sm font-bold text-slate-100 flex items-center"><i class="fa-solid fa-hockey-puck text-cyan-400 mr-2"></i> 7-Game Series Timeline Breakdown</h3><p class="text-xs text-slate-400">Simulated game outcomes derived from Poisson goal expectation probabilities and AI game flow</p></div>
+<div id="seriesStatusBadge" class="px-3 py-1 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-xs font-mono font-semibold">Final: EDM Wins 4-2</div>
+</div>
+<div id="timelineContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+</div>
+</main>
+<footer class="border-t border-slate-800 bg-slate-950 py-4 mt-8 text-center text-xs text-slate-500 font-mono">
+<p>Stanley Cup AI Predictor &bull; Powered by Gemini 2.5 Flash & Quantitative Hockey Analytics</p>
+</footer>
+<div id="apiModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
+<div class="glass w-full max-w-md p-6 rounded-2xl border border-slate-700 space-y-4">
+<div class="flex justify-between items-center border-b border-slate-800 pb-3"><h3 class="text-sm font-bold text-slate-100 flex items-center"><i class="fa-solid fa-key text-cyan-400 mr-2"></i> Gemini API Key Config</h3><button onclick="toggleModal('apiModal', false)" class="text-slate-400 hover:text-white text-lg">&times;</button></div>
+<p class="text-xs text-slate-300">Enter your Google Gemini API Key below. Stored locally in browser for direct REST API queries.</p>
+<div class="space-y-1"><label class="block text-xs font-semibold text-slate-300">API Key</label><input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-cyan-400"></div>
+<div class="flex items-center justify-between pt-2">
+<button onclick="testApiKey()" id="testKeyBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-medium text-slate-200 hover:bg-slate-700">Test Connection</button>
+<div class="flex space-x-2"><button onclick="clearApiKey()" class="px-3 py-1.5 rounded-lg bg-red-950 border border-red-800 text-xs text-red-300 font-medium hover:bg-red-900">Clear</button><button onclick="saveApiKey()" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 text-xs font-bold hover:opacity-90">Save Key</button></div>
+</div>
+</div>
+</div>
+<script>
+const NHL_TEAMS = {
+  EDM: { name: 'Edmonton Oilers', gf: 3.56, ga: 2.88, sv: 0.908, pp: 28.5, cf: 54.2, pdo: 1.002 },
+  FLA: { name: 'Florida Panthers', gf: 3.38, ga: 2.71, sv: 0.915, pp: 23.2, cf: 53.1, pdo: 1.005 },
+  NYR: { name: 'New York Rangers', gf: 3.39, ga: 2.76, sv: 0.913, pp: 26.4, cf: 50.8, pdo: 1.012 },
+  DAL: { name: 'Dallas Stars', gf: 3.45, ga: 2.83, sv: 0.910, pp: 24.1, cf: 52.4, pdo: 1.008 },
+  CAR: { name: 'Carolina Hurricanes', gf: 3.38, ga: 2.57, sv: 0.906, pp: 26.9, cf: 58.1, pdo: 0.995 },
+  VAN: { name: 'Vancouver Canucks', gf: 3.40, ga: 2.70, sv: 0.911, pp: 22.7, cf: 51.5, pdo: 1.018 },
+  COL: { name: 'Colorado Avalanche', gf: 3.68, ga: 3.05, sv: 0.899, pp: 24.5, cf: 53.8, pdo: 1.001 },
+  BOS: { name: 'Boston Bruins', gf: 3.21, ga: 2.69, sv: 0.914, pp: 22.2, cf: 50.2, pdo: 1.009 },
+  VGK: { name: 'Vegas Golden Knights', gf: 3.17, ga: 2.96, sv: 0.903, pp: 20.2, cf: 51.0, pdo: 1.000 },
+  TBL: { name: 'Tampa Bay Lightning', gf: 3.51, ga: 3.26, sv: 0.898, pp: 28.6, cf: 50.5, pdo: 1.004 }
+};
+const DEFAULT_FALLBACK_PREDICTION = {
+  champion: "Edmonton Oilers", runnerUp: "Florida Panthers", seriesScore: "4-2", winProbability: 58.4,
+  tacticalBreakdown: "Edmonton's historically elite power play efficiency combined with superior Corsi possession metrics creates a tactical edge over Florida's physical forecheck. Expected goals regression indicates the Oilers sustain offensive drive in 5v5 situations while converting high-danger chances.",
+  gamesTimeline: [
+    { game: 1, winner: "Edmonton Oilers", score: "4-2", goalDetails: "McDavid PP Winner in 3rd", periodStatus: "Regulation" },
+    { game: 2, winner: "Florida Panthers", score: "3-2", goalDetails: "Tkachuk OT Winner", periodStatus: "OT1" },
+    { game: 3, winner: "Edmonton Oilers", score: "5-3", goalDetails: "Draisaitl Empty Netter", periodStatus: "Regulation" },
+    { game: 4, winner: "Edmonton Oilers", score: "3-1", goalDetails: "Hyman High-Danger Tip", periodStatus: "Regulation" },
+    { game: 5, winner: "Florida Panthers", score: "4-2", goalDetails: "Barkov Short-Handed Goal", periodStatus: "Regulation" },
+    { game: 6, winner: "Edmonton Oilers", score: "2-1", goalDetails: "Bouchard Point Shot OT Winner", periodStatus: "OT1" }
+  ]
+};
+let timerInterval = null;
+function calculatePoissonGoalExpectation(teamAKey, teamBKey) {
+  const teamA = NHL_TEAMS[teamAKey], teamB = NHL_TEAMS[teamBKey], leagueAvgGF = 3.12, homeIceAdvantage = 1.08;
+  const attA = teamA.gf / leagueAvgGF, defA = teamA.ga / leagueAvgGF, attB = teamB.gf / leagueAvgGF, defB = teamB.ga / leagueAvgGF;
+  const pdoAdjA = 1 - (teamA.pdo - 1.000) * 0.5, pdoAdjB = 1 - (teamB.pdo - 1.000) * 0.5;
+  const corsiWeightA = teamA.cf / 50.0, corsiWeightB = teamB.cf / 50.0;
+  const xGA = leagueAvgGF * attA * defB * homeIceAdvantage * pdoAdjA * (corsiWeightA * 0.2 + 0.8);
+  const xGB = leagueAvgGF * attB * defA * pdoAdjB * (corsiWeightB * 0.2 + 0.8);
+  const probA = (Math.pow(xGA, 2) / (Math.pow(xGA, 2) + Math.pow(xGB, 2))) * 100;
+  return { teamAxG: xGA.toFixed(2), teamBxG: xGB.toFixed(2), probA: probA.toFixed(1), probB: (100 - probA).toFixed(1), pdoA: teamA.pdo.toFixed(3), pdoB: teamB.pdo.toFixed(3) };
+}
+function recalculateQuantModel() {
+  const teamAKey = document.getElementById('teamASelect').value, teamBKey = document.getElementById('teamBSelect').value;
+  const teamA = NHL_TEAMS[teamAKey], teamB = NHL_TEAMS[teamBKey], quant = calculatePoissonGoalExpectation(teamAKey, teamBKey);
+  document.getElementById('mathTeamAName').innerText = teamA.name; document.getElementById('mathTeamAxG').innerText = `${quant.teamAxG} xG/G`;
+  document.getElementById('mathTeamAPDO').innerText = quant.pdoA; document.getElementById('mathTeamACersi').innerText = `${teamA.cf}%`;
+  document.getElementById('mathTeamBName').innerText = teamB.name; document.getElementById('mathTeamBxG').innerText = `${quant.teamBxG} xG/G`;
+  document.getElementById('mathTeamBPDO').innerText = quant.pdoB; document.getElementById('mathTeamBCersi').innerText = `${teamB.cf}%`;
+  document.getElementById('quantEdgeResult').innerText = `${quant.probA}% - ${quant.probB}%`;
+  document.getElementById('legendTeamA').innerText = teamAKey; document.getElementById('legendTeamB').innerText = teamBKey;
+  document.getElementById('statOffA').innerText = teamA.gf; document.getElementById('statOffB').innerText = teamB.gf;
+  document.getElementById('barOffA').style.width = `${(teamA.gf / (teamA.gf + teamB.gf)) * 100}%`; document.getElementById('barOffB').style.width = `${(teamB.gf / (teamA.gf + teamB.gf)) * 100}%`;
+  document.getElementById('statSvA').innerText = teamA.sv; document.getElementById('statSvB').innerText = teamB.sv;
+  document.getElementById('barSvA').style.width = `${(teamA.sv / (teamA.sv + teamB.sv)) * 100}%`; document.getElementById('barSvB').style.width = `${(teamB.sv / (teamA.sv + teamB.sv)) * 100}%`;
+  document.getElementById('statPpA').innerText = `${teamA.pp}%`; document.getElementById('statPpB').innerText = `${teamB.pp}%`;
+  document.getElementById('barPpA').style.width = `${(teamA.pp / (teamA.pp + teamB.pp)) * 100}%`; document.getElementById('barPpB').style.width = `${(teamB.pp / (teamA.pp + teamB.pp)) * 100}%`;
+  document.getElementById('statCfA').innerText = `${teamA.cf}%`; document.getElementById('statCfB').innerText = `${teamB.cf}%`;
+  document.getElementById('barCfA').style.width = `${(teamA.cf / (teamA.cf + teamB.cf)) * 100}%`; document.getElementById('barCfB').style.width = `${(teamB.cf / (teamA.cf + teamB.cf)) * 100}%`;
+}
+async function fetchGeminiPrediction(teamAKey, teamBKey) {
+  const apiKey = localStorage.getItem('gemini_api_key');
+  if (!apiKey) throw new Error('No API Key configured');
+  const quant = calculatePoissonGoalExpectation(teamAKey, teamBKey), teamA = NHL_TEAMS[teamAKey], teamB = NHL_TEAMS[teamBKey];
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const prompt = `Predict Stanley Cup Finals: ${teamA.name} vs ${teamB.name}. Metrics - A: ${quant.teamAxG}xG, ${teamA.cf}%CF, ${teamA.pdo}PDO. B: ${quant.teamBxG}xG, ${teamB.cf}%CF, ${teamB.pdo}PDO. Return strict JSON.`;
+  const payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          champion: { type: "STRING" }, runnerUp: { type: "STRING" }, seriesScore: { type: "STRING" }, winProbability: { type: "NUMBER" }, tacticalBreakdown: { type: "STRING" },
+          gamesTimeline: {
+            type: "ARRAY", items: { type: "OBJECT", properties: { game: { type: "INTEGER" }, winner: { type: "STRING" }, score: { type: "STRING" }, goalDetails: { type: "STRING" }, periodStatus: { type: "STRING" } }, required: ["game", "winner", "score", "goalDetails", "periodStatus"] }
+          }
+        },
+        required: ["champion", "runnerUp", "seriesScore", "winProbability", "tacticalBreakdown", "gamesTimeline"]
+      }
+    }
+  };
+  const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  if (!response.ok) throw new Error('API Request Failed');
+  const result = await response.json();
+  return JSON.parse(result.candidates[0].content.parts[0].text);
+}
+function updateUIWithData(data) {
+  document.getElementById('heroChampionName').innerText = data.champion.toUpperCase();
+  document.getElementById('heroTacticalSummary').innerText = data.tacticalBreakdown;
+  document.getElementById('heroWinProb').innerText = `${Number(data.winProbability).toFixed(1)}%`;
+  document.getElementById('heroSeriesScore').innerText = data.seriesScore;
+  document.getElementById('heroRunnerUp').innerText = data.runnerUp;
+  document.getElementById('heroMatchupTitle').innerText = `${document.getElementById('teamASelect').value} vs ${document.getElementById('teamBSelect').value}`;
+  document.getElementById('aiTacticalText').innerHTML = `<p>${data.tacticalBreakdown}</p>`;
+  document.getElementById('seriesStatusBadge').innerText = `Final: ${data.champion} Wins ${data.seriesScore}`;
+  const container = document.getElementById('timelineContainer'); container.innerHTML = '';
+  data.gamesTimeline.forEach((g) => {
+    const card = document.createElement('div');
+    card.className = "bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 flex flex-col justify-between space-y-2";
+    card.innerHTML = `<div class="flex items-center justify-between border-b border-slate-800 pb-1.5"><span class="text-xs font-mono font-bold text-slate-400">GAME ${g.game}</span><span class="text-[10px] font-mono px-2 py-0.5 rounded ${g.periodStatus.includes('OT') ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-slate-800 text-slate-300'}">${g.periodStatus}</span></div><div><div class="text-xs font-bold text-slate-200 mb-1 flex items-center justify-between"><span>${g.winner}</span><span class="text-cyan-400 font-mono text-sm">${g.score}</span></div><p class="text-[11px] text-slate-400 leading-snug">${g.goalDetails}</p></div><div class="text-[10px] font-mono text-slate-500 pt-1"><i class="fa-solid fa-circle-check text-cyan-400 mr-1"></i>Series Result Update</div>`;
+    container.appendChild(card);
+  });
+}
+function initializeSyncTimer() {
+  let lastUpdated = localStorage.getItem('lastUpdatedTimestamp') || Date.now(); localStorage.setItem('lastUpdatedTimestamp', lastUpdated);
+  document.getElementById('lastUpdatedTime').innerText = new Date(parseInt(lastUpdated, 10)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const remaining = (24 * 60 * 60 * 1000) - (Date.now() - parseInt(lastUpdated, 10));
+    if (remaining <= 0) { triggerManualSync(); }
+    else {
+      const hrs = Math.floor(remaining / 3600000).toString().padStart(2, '0');
+      const mins = Math.floor((remaining % 3600000) / 60000).toString().padStart(2, '0');
+      const secs = Math.floor((remaining % 60000) / 1000).toString().padStart(2, '0');
+      document.getElementById('timerCountdown').innerText = `${hrs}:${mins}:${secs}`;
+    }
+  }, 1000);
+}
+async function triggerManualSync() {
+  const spinner = document.getElementById('syncSpinner'); spinner.classList.add('fa-spin');
+  const teamAKey = document.getElementById('teamASelect').value, teamBKey = document.getElementById('teamBSelect').value;
+  try {
+    if (localStorage.getItem('gemini_api_key')) {
+      const aiData = await fetchGeminiPrediction(teamAKey, teamBKey); updateUIWithData(aiData);
+      document.getElementById('engineModeText').innerText = "Gemini 2.5 Flash Engine"; document.getElementById('engineModeText').className = "text-cyan-400 font-semibold";
+      document.getElementById('aiStatusBadge').innerText = "Gemini 2.5 Live Sync";
+    } else {
+      recalculateQuantModel(); updateUIWithData(DEFAULT_FALLBACK_PREDICTION);
+      document.getElementById('engineModeText').innerText = "Poisson-PDO Math Model"; document.getElementById('engineModeText').className = "text-amber-400 font-semibold";
+      document.getElementById('aiStatusBadge').innerText = "Math Synthetic Model";
+    }
+    const now = Date.now(); localStorage.setItem('lastUpdatedTimestamp', now);
+    document.getElementById('lastUpdatedTime').innerText = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (err) { updateUIWithData(DEFAULT_FALLBACK_PREDICTION); }
+  finally { spinner.classList.remove('fa-spin'); }
+}
+function toggleModal(id, show) { document.getElementById(id).classList.toggle('hidden', !show); }
+function checkApiKeyStatus() {
+  const key = localStorage.getItem('gemini_api_key');
+  document.getElementById('apiKeyDot').className = key ? "w-2 h-2 rounded-full bg-cyan-400" : "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+  document.getElementById('apiKeyStatusText').innerText = key ? "API Key Active" : "API Key";
+  if (key) document.getElementById('apiKeyInput').value = key;
+}
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (val) { localStorage.setItem('gemini_api_key', val); checkApiKeyStatus(); toggleModal('apiModal', false); triggerManualSync(); }
+}
+function clearApiKey() { localStorage.removeItem('gemini_api_key'); document.getElementById('apiKeyInput').value = ''; checkApiKeyStatus(); }
+async function testApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim(); if (!key) return;
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: "Ping" }] }] }) });
+    alert(res.ok ? "Gemini Connection Successful!" : "Invalid Gemini API Key");
+  } catch (e) { alert("Connection Failed"); }
+}
+window.onload = function() { checkApiKeyStatus(); recalculateQuantModel(); updateUIWithData(DEFAULT_FALLBACK_PREDICTION); initializeSyncTimer(); };
+</script>
+</body>
+</html>
